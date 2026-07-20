@@ -24,6 +24,11 @@ type WatchedEpisodeAddRequest struct {
 	Rating          int8                 `json:"rating" binding:"max=10"`
 	AddActivity     entity.ActivityType  `json:"-"`
 	AddActivityDate time.Time            `json:"-"`
+	// If true, and Status is FINISHED, also set every earlier episode in
+	// this season (episode numbers 1..EpisodeNumber-1) to FINISHED too
+	// (status only, existing ratings are never touched). Sent by the
+	// client only after the user has confirmed this via a prompt.
+	CascadePreviousEpisodes bool `json:"cascadePreviousEpisodes,omitempty"`
 }
 
 type WatchedEpisodeAddResponse struct {
@@ -133,9 +138,55 @@ func (s *Service) AddWatchedEpisodes(userId uint, ar WatchedEpisodeAddRequest) (
 			Rating:        ar.Rating,
 		})
 	}
+	// User confirmed cascading FINISHED status back to earlier episodes
+	// in this season - set them (status only, ratings untouched).
+	var previousEpisodesFinished int
+	if ar.CascadePreviousEpisodes && ar.Status == entity.FINISHED {
+		for epNum := 1; epNum < ar.EpisodeNumber; epNum++ {
+			existingIdx := -1
+			for i, we := range w.WatchedEpisodes {
+				if we.SeasonNumber == ar.SeasonNumber && we.EpisodeNumber == epNum {
+					existingIdx = i
+					break
+				}
+			}
+			if existingIdx != -1 {
+				if w.WatchedEpisodes[existingIdx].Status != entity.FINISHED {
+					w.WatchedEpisodes[existingIdx].Status = entity.FINISHED
+					previousEpisodesFinished++
+				}
+				continue
+			}
+			w.WatchedEpisodes = append(w.WatchedEpisodes, entity.WatchedEpisode{
+				UserID:        userId,
+				WatchedID:     ar.WatchedID,
+				SeasonNumber:  ar.SeasonNumber,
+				EpisodeNumber: epNum,
+				Status:        entity.FINISHED,
+			})
+			previousEpisodesFinished++
+		}
+	}
 	if resp := s.db.Save(&w.WatchedEpisodes); resp.Error != nil {
 		slog.Debug("Failed to save watched episode item in db", "error", resp.Error)
 		return WatchedEpisodeAddResponse{}, errors.New("failed to save")
+	}
+	var cascadeActivity entity.Activity
+	if previousEpisodesFinished > 0 {
+		json, _ := json.Marshal(map[string]any{
+			"season":          ar.SeasonNumber,
+			"beforeEpisode":   ar.EpisodeNumber,
+			"episodesChanged": previousEpisodesFinished,
+		})
+		cascadeActivity, _ = s.activityProvider.AddActivity(
+			userId,
+			domain.ActivityAddProps{
+				WatchedID: w.ID,
+				Type:      entity.PREVIOUS_EPISODES_FINISHED_AUTO,
+				Data:      string(json),
+			},
+			false,
+		)
 	}
 	// Add activity
 	if found {
@@ -205,6 +256,12 @@ func (s *Service) AddWatchedEpisodes(userId uint, ar WatchedEpisodeAddRequest) (
 				ar.SeasonNumber,
 				ar.EpisodeNumber,
 				ar.Status)
+	}
+	if previousEpisodesFinished > 0 {
+		episodeAddResp.EpisodeStatusChangedHookResponse.AddedActivities = append(
+			episodeAddResp.EpisodeStatusChangedHookResponse.AddedActivities,
+			cascadeActivity,
+		)
 	}
 	return episodeAddResp, nil
 }

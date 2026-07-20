@@ -32,12 +32,17 @@ var (
 	SEASON_RATING_CHANGED       ActivityType = "SEASON_RATING_CHANGED"
 	SEASON_STATUS_CHANGED       ActivityType = "SEASON_STATUS_CHANGED"
 	SEASON_STATUS_CHANGED_AUTO  ActivityType = "SEASON_STATUS_CHANGED_AUTO"
-	EPISODE_ADDED               ActivityType = "EPISODE_ADDED"
-	EPISODE_ADDED_JF            ActivityType = "EPISODE_ADDED_JF"
-	EPISODE_ADDED_PLEX          ActivityType = "EPISODE_ADDED_PLEX"
-	EPISODE_REMOVED             ActivityType = "EPISODE_REMOVED"
-	EPISODE_RATING_CHANGED      ActivityType = "EPISODE_RATING_CHANGED"
-	EPISODE_STATUS_CHANGED      ActivityType = "EPISODE_STATUS_CHANGED"
+	// A season's status change cascaded down and set the same status on all of its episodes.
+	SEASON_EPISODES_STATUS_CHANGED_AUTO ActivityType = "SEASON_EPISODES_STATUS_CHANGED_AUTO"
+	EPISODE_ADDED                       ActivityType = "EPISODE_ADDED"
+	EPISODE_ADDED_JF                    ActivityType = "EPISODE_ADDED_JF"
+	EPISODE_ADDED_PLEX                  ActivityType = "EPISODE_ADDED_PLEX"
+	EPISODE_REMOVED                     ActivityType = "EPISODE_REMOVED"
+	EPISODE_RATING_CHANGED              ActivityType = "EPISODE_RATING_CHANGED"
+	EPISODE_STATUS_CHANGED              ActivityType = "EPISODE_STATUS_CHANGED"
+	// An episode being set to FINISHED (user-confirmed) cascaded backwards,
+	// setting every earlier episode in the season to FINISHED too.
+	PREVIOUS_EPISODES_FINISHED_AUTO ActivityType = "PREVIOUS_EPISODES_FINISHED_AUTO"
 )
 
 type Activity struct {

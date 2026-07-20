@@ -2,6 +2,7 @@ package content
 
 import (
 	"log/slog"
+	"sort"
 
 	"github.com/sbondCo/Watcharr/media/tmdb"
 )
@@ -44,6 +45,8 @@ func transformProviders(c *any, country string) tmdb.WatchProviders {
 	// mapping them to a WatchProvider struct.
 	resp.Flatrate = transformProvidersType("flatrate", rvmap, resp.Flatrate)
 	resp.Free = transformProvidersType("free", rvmap, resp.Free)
+	resp.Rent = transformProvidersType("rent", rvmap, resp.Rent)
+	resp.Buy = transformProvidersType("buy", rvmap, resp.Buy)
 
 	tmdbLink, ok := rvmap["link"].(string)
 	if ok {
@@ -64,6 +67,7 @@ func transformProvidersType(
 		slog.Warn("transformProvidersType: Assertion failed")
 		return providers
 	}
+	start := len(providers)
 	for i := range tm {
 		v2, ok := tm[i].(map[string]any)
 		if !ok {
@@ -73,10 +77,21 @@ func transformProvidersType(
 		if !ok {
 			continue
 		}
+		logoPath, _ := v2["logo_path"].(string)
+		// display_priority comes through as a float64 from the JSON decoder.
+		displayPriority, _ := v2["display_priority"].(float64)
 		providers = append(providers,
 			tmdb.WatchProvider{
-				ProviderName: providerName,
+				ProviderName:    providerName,
+				LogoPath:        logoPath,
+				DisplayPriority: int(displayPriority),
 			})
 	}
+	// Sort just the entries we added, so the most relevant providers
+	// (as ranked by tmdb) show up first.
+	added := providers[start:]
+	sort.Slice(added, func(i, j int) bool {
+		return added[i].DisplayPriority < added[j].DisplayPriority
+	})
 	return providers
 }

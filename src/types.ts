@@ -188,6 +188,13 @@ export interface ActivityUpdateRequest {
 export interface WatchedSeasonAddResponse {
 	watchedSeasons: WatchedSeason[];
 	addedActivity: Activity;
+	seasonStatusChangedHookResponse?: SeasonStatusChangedHookResponse;
+}
+
+export interface SeasonStatusChangedHookResponse {
+	watchedEpisodes?: WatchedEpisode[];
+	addedActivities?: Activity[];
+	errors?: string[];
 }
 
 export interface WatchedEpisodeAddResponse {
@@ -354,9 +361,14 @@ export interface MediaGenre {
 	name: string;
 }
 
+export type MediaProviderType = "sub" | "free" | "rent" | "buy";
+
 export interface MediaProvider {
 	name: string;
-	link: string;
+	type?: MediaProviderType;
+	link?: string;
+	// Path (relative to tmdb's image cdn) to the provider's logo.
+	logo?: string;
 }
 
 export enum MediaVideoType {

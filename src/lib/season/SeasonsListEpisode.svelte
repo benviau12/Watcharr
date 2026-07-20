@@ -11,6 +11,7 @@
 	import { store } from "@/store.svelte";
 	import { removeWatchedEpisode, updateWatchedEpisode } from "./api";
 	import { onMount } from "svelte";
+	import MarkPreviousEpisodesFinishedModal from "./MarkPreviousEpisodesFinishedModal.svelte";
 
 	interface Props {
 		ep: TMDBSeasonDetailsEpisode;
@@ -18,6 +19,8 @@
 	}
 
 	let { ep, watchedItem }: Props = $props();
+
+	let showCascadeFinishedModal: boolean = $state(false);
 
 	const we = $derived(
 		watchedItem?.watchedEpisodes?.find(
@@ -44,6 +47,23 @@
 		reSetIsHidden();
 	});
 
+	/**
+	 * Whether any episode before this one (in the same season) isn't
+	 * marked FINISHED yet - either it has some other status, or it has no
+	 * watched entry at all.
+	 */
+	function hasUnfinishedPreviousEpisodes() {
+		for (let epNum = 1; epNum < ep.episode_number; epNum++) {
+			const prevWe = watchedItem?.watchedEpisodes?.find(
+				(s) => s.seasonNumber === ep.season_number && s.episodeNumber === epNum,
+			);
+			if (prevWe?.status !== "FINISHED") {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	async function handleStatusClick(type: WatchedStatus | "DELETE") {
 		if (!watchedItem) {
 			console.error("SeasonListEpisode: handleStatusClick: No watched item.");
@@ -69,12 +89,43 @@
 			// show spoilers, then delete episode, spoilers re-hidden automatically).
 			return;
 		}
+		if (
+			type === "FINISHED" &&
+			ep.episode_number > 1 &&
+			hasUnfinishedPreviousEpisodes()
+		) {
+			showCascadeFinishedModal = true;
+			return;
+		}
 		await updateWatchedEpisode(
 			watchedItem,
 			ep.season_number,
 			ep.episode_number,
 			{
 				status: type,
+			},
+		);
+		reSetIsHidden();
+	}
+
+	/**
+	 * Called when the user answers the "mark previous episodes finished
+	 * too?" prompt. Always finishes this episode; `confirmed` decides
+	 * whether earlier episodes in the season are cascaded to FINISHED too.
+	 */
+	async function handleCascadeModalClose(confirmed: boolean) {
+		showCascadeFinishedModal = false;
+		if (!watchedItem) {
+			console.error("handleCascadeModalClose: No watched item.");
+			return;
+		}
+		await updateWatchedEpisode(
+			watchedItem,
+			ep.season_number,
+			ep.episode_number,
+			{
+				status: "FINISHED",
+				cascadePreviousEpisodes: confirmed,
 			},
 		);
 		reSetIsHidden();
@@ -154,6 +205,13 @@
 		</button>
 	{/if}
 </li>
+
+{#if showCascadeFinishedModal}
+	<MarkPreviousEpisodesFinishedModal
+		episodeNumber={ep.episode_number}
+		onClose={handleCascadeModalClose}
+	/>
+{/if}
 
 <style lang="scss">
 	li {

@@ -368,12 +368,28 @@ func (t *TMDBContentDetails) AsMedia() domain.Media {
 		m.Providers = append(m.Providers, domain.MediaProvider{
 			Name: v.ProviderName,
 			Type: domain.MediaProviderTypeFree,
+			Logo: v.LogoPath,
 		})
 	}
 	for _, v := range t.WatchProvidersTransformed.Flatrate {
 		m.Providers = append(m.Providers, domain.MediaProvider{
 			Name: v.ProviderName,
 			Type: domain.MediaProviderTypeSub,
+			Logo: v.LogoPath,
+		})
+	}
+	for _, v := range t.WatchProvidersTransformed.Rent {
+		m.Providers = append(m.Providers, domain.MediaProvider{
+			Name: v.ProviderName,
+			Type: domain.MediaProviderTypeRent,
+			Logo: v.LogoPath,
+		})
+	}
+	for _, v := range t.WatchProvidersTransformed.Buy {
+		m.Providers = append(m.Providers, domain.MediaProvider{
+			Name: v.ProviderName,
+			Type: domain.MediaProviderTypeBuy,
+			Logo: v.LogoPath,
 		})
 	}
 	m.ProvidersFullListLink = t.WatchProvidersTransformed.Link
@@ -1012,6 +1028,10 @@ type WatchProviders struct {
 	Flatrate []WatchProvider `json:"flatrate"`
 	// Free providers
 	Free []WatchProvider `json:"free"`
+	// Rentable digitally
+	Rent []WatchProvider `json:"rent"`
+	// Buyable digitally
+	Buy []WatchProvider `json:"buy"`
 	// Link to view all streaming options on tmdb
 	Link string `json:"link"`
 }
@@ -1020,6 +1040,7 @@ type WatchProvider struct {
 	ProviderID      int    `json:"provider_id"`
 	ProviderName    string `json:"provider_name"`
 	DisplayPriority int    `json:"display_priority"`
+	LogoPath        string `json:"logo_path"`
 }
 
 type TMDBContentVideos struct {

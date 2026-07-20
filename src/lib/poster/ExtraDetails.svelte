@@ -61,7 +61,7 @@
 					</span>
 				</span>
 			{/if}{#if lastWatched && store.wlDetailedView.includes("lastWatched")}
-				<span title="Latest season watched">
+				<span title="Next up">
 					<i><Icon i="play" wh={15} /></i>
 					<span>{lastWatched}</span>
 				</span>

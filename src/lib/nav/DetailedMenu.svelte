@@ -32,7 +32,7 @@
 		class={`plain ${store.wlDetailedView?.includes("lastWatched") ? "on" : ""}`}
 		onclick={() => detailClicked("lastWatched")}
 	>
-		Watching Season
+		Next Up
 	</button>
 	<button
 		class={`plain ${store.wlDetailedView?.includes("dateAdded") ? "on" : ""}`}

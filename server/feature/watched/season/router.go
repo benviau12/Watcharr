@@ -36,6 +36,11 @@ func (r *Router) AddWatchedSeason(c *gin.Context) {
 	var ar WatchedSeasonAddRequest
 	err := c.ShouldBindJSON(&ar)
 	if err == nil {
+		// This is a direct user request, so cascade FINISHED/DROPPED status
+		// down to the season's episodes. Other internal callers (sync,
+		// import, the episode-status hook) construct their own requests and
+		// never set this.
+		ar.CascadeStatus = true
 		response, err := r.s.AddWatchedSeason(userId, ar)
 		if err != nil {
 			c.JSON(http.StatusForbidden, router.ErrorResponse{Error: err.Error()})

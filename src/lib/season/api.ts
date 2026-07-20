@@ -15,6 +15,9 @@ interface UpdateWatchedSeasonOptions {
 interface UpdateWatchedEpisodeOptions {
 	status?: WatchedStatus;
 	rating?: number;
+	// Only set after the user confirms via a prompt - if status is
+	// FINISHED, also sets every earlier episode in the season to FINISHED.
+	cascadePreviousEpisodes?: boolean;
 }
 
 export async function updateWatchedSeason(
@@ -39,6 +42,39 @@ export async function updateWatchedSeason(
 			watchedItem.activity.push(r.data.addedActivity);
 		} else {
 			watchedItem.activity = [r.data.addedActivity];
+		}
+		try {
+			const seasonHookResp = r?.data?.seasonStatusChangedHookResponse;
+			if (seasonHookResp && Object.keys(seasonHookResp).length > 0) {
+				if (seasonHookResp.errors && seasonHookResp.errors.length > 0) {
+					console.error(
+						"seasonStatusChangedHookResponse contained errors! All possible automations may not have been completed.",
+						seasonHookResp.errors,
+					);
+					notify({
+						type: "error",
+						text: "Some automations have failed, check console for more info.",
+					});
+				}
+				if (
+					seasonHookResp.addedActivities &&
+					seasonHookResp.addedActivities.length > 0
+				) {
+					watchedItem.activity.push(...seasonHookResp.addedActivities);
+				}
+				// Only replace if the cascade actually ran (a rating-only
+				// update has no hook response at all) - never wipe local
+				// episode state to undefined.
+				if (seasonHookResp.watchedEpisodes) {
+					watchedItem.watchedEpisodes = seasonHookResp.watchedEpisodes;
+				}
+			}
+		} catch (err) {
+			console.error("Failed to process seasonStatusChangedHookResponse", err);
+			notify({
+				type: "error",
+				text: "Failed to process automation response, check console for more info.",
+			});
 		}
 		notify({ id: nid, text: `Saved!`, type: "success" });
 	} catch (err) {
@@ -86,6 +122,7 @@ export async function updateWatchedEpisode(
 			episodeNumber,
 			status: opts.status,
 			rating: opts.rating,
+			cascadePreviousEpisodes: opts.cascadePreviousEpisodes,
 		});
 		watchedItem.watchedEpisodes = r.data.watchedEpisodes;
 		if (watchedItem.activity && watchedItem.activity?.length > 0) {

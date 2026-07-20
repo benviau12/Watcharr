@@ -220,13 +220,15 @@
 							{/if}
 						</div>
 
-						{#if movie.providers}
-							<ProvidersList
-								providers={movie.providers}
-								fullListLink={movie.providersFullListLink}
-								fullListLinkText="JustWatch"
-							/>
-						{/if}
+						<ProvidersList
+							providers={movie.providers ?? []}
+							fullListLink={movie.providersFullListLink}
+							fullListLinkText="JustWatch"
+							releaseDate={movie.releaseDate
+								? new Date(movie.releaseDate)
+								: undefined}
+							mediaType="movie"
+						/>
 					</div>
 				</div>
 			</div>

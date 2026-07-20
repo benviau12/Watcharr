@@ -99,6 +99,12 @@
 					return `Changed Season ${data.season} Status to ${toFullTitleCase(data.status)}`;
 				}
 				return "Season Status Changed";
+			case "SEASON_EPISODES_STATUS_CHANGED_AUTO":
+				if (a.data) {
+					const data = JSON.parse(a.data);
+					return `Season ${data.season} Episodes Set to ${toFullTitleCase(data.status)}`;
+				}
+				return "Season Episodes Status Changed";
 			case "SEASON_REMOVED":
 				if (a.data) {
 					const data = JSON.parse(a.data);
@@ -136,6 +142,12 @@
 					return `${seasonAndEpToReadable(data.season, data.episode)} Removed`;
 				}
 				return "Episode Removed";
+			case "PREVIOUS_EPISODES_FINISHED_AUTO":
+				if (a.data) {
+					const data = JSON.parse(a.data);
+					return `${seasonAndEpToReadable(data.season, 1)}-E${data.beforeEpisode - 1} Set to Finished`;
+				}
+				return "Previous Episodes Set to Finished";
 			default:
 				return a.type;
 		}

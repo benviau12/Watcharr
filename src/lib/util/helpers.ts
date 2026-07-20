@@ -234,6 +234,19 @@ export function toRelativeDate(d: Date): string {
 }
 
 /**
+ * Format a date as a full, unambiguous date (eg `March 1st, 2024`).
+ * Unlike `toRelativeDate`, this always includes the full month name and
+ * year, regardless of how close the date is to today.
+ * @param d Date.
+ */
+export function toFullDate(d: Date): string {
+	if (!d) {
+		return "Unknown";
+	}
+	return `${months[d.getMonth()]} ${d.getDate()}${getOrdinalSuffix(d.getDate())}, ${d.getFullYear()}`;
+}
+
+/**
  * To relative time (seconds, mins, hours).
  * @param s Seconds.
  */
